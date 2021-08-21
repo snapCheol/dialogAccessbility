@@ -1,4 +1,11 @@
-import { FunctionComponent, ReactElement } from 'react';
+import {
+  FunctionComponent,
+  MutableRefObject,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
 import styled from '@emotion/styled';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -27,8 +34,34 @@ const Dialog: FunctionComponent<DialogProps> = ({
   cancelLabel = '취소',
   children,
 }) => {
+  // ESC 키를 누를 경우 다이얼로그 닫기 핸들러 함수
+  const handleKeyPressClose = useCallback(
+    (evt: KeyboardEvent) => {
+      if (evt.key === 'Escape') onClose && onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    // 다이얼로그 컴포넌트가 마운트 되었을 때 키보드 이벤트 등록
+    window.addEventListener('keydown', handleKeyPressClose);
+
+    // 다이얼로그 컴포넌트가 언마운트 되기 직전 키보드 이벤트 등록해제
+    return () => window.removeEventListener('keydown', handleKeyPressClose);
+  }, [handleKeyPressClose]);
+
+  // 다이얼로그 컨테이너 ref 참조
+  const dialogRef: MutableRefObject<HTMLDivElement | null> = useRef(null);
+  // 다이얼로그 팝업 시 포커스 자동 이동
+  useEffect(() => {
+    if (dialogRef.current) {
+      dialogRef.current.setAttribute('tabindex', '-1');
+      dialogRef.current.focus();
+    }
+  }, []);
+
   return (
-    <DialogDimmStyle role='dialog' aria-labelledby={id}>
+    <DialogDimmStyle role='dialog' aria-labelledby={id} ref={dialogRef}>
       <DialogBox>
         {title && <DialogTitle id={id}>{title}</DialogTitle>}
         <DialogBody>{children}</DialogBody>
