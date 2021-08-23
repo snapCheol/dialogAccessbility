@@ -1,8 +1,8 @@
-import { FunctionComponent, ReactElement, useCallback, useEffect } from 'react';
-import styled from '@emotion/styled';
+import * as React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
+import { DialogStyle } from './dialog.styles';
 import Button from '../button/Button';
 import ScreenOut from '../screenOut/ScreenOut';
 
@@ -14,10 +14,10 @@ interface DialogProps {
   onClose?: () => void;
   confirmLabel?: string;
   cancelLabel?: string;
-  children?: ReactElement;
+  children?: React.ReactElement;
 }
 
-const Dialog: FunctionComponent<DialogProps> = ({
+const Dialog: React.FunctionComponent<DialogProps> = ({
   id,
   title,
   onConfirm,
@@ -27,99 +27,108 @@ const Dialog: FunctionComponent<DialogProps> = ({
   cancelLabel = '취소',
   children,
 }) => {
+  // 다이얼로그 컨테이너 ref 참조
+  const dialogRef: React.MutableRefObject<HTMLDivElement | null> =
+    React.useRef(null);
+
+  const handleClickDimmed = (evt: React.MouseEvent<HTMLDivElement>) => {
+    if (dialogRef.current && onClose) {
+      if (dialogRef.current === evt.target) {
+        onClose();
+      }
+    }
+  };
+
   // ESC 키를 누를 경우 다이얼로그 닫기 핸들러 함수
-  const handleKeyPressClose = useCallback(
+  const handleKeyPressClose = React.useCallback(
     (evt: KeyboardEvent) => {
-      if (evt.key === 'Escape') onClose && onClose();
+      if (evt.key === 'Escape' && onClose) onClose();
     },
     [onClose]
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     // 다이얼로그 컴포넌트가 마운트 되었을 때 키보드 이벤트 등록
-    window.addEventListener('keydown', handleKeyPressClose);
+    window.addEventListener('keyup', handleKeyPressClose);
 
     // 다이얼로그 컴포넌트가 언마운트 되기 직전 키보드 이벤트 등록해제
-    return () => window.removeEventListener('keydown', handleKeyPressClose);
+    return () => window.removeEventListener('keyup', handleKeyPressClose);
   }, [handleKeyPressClose]);
 
+  const handleFocusMove = (evt: KeyboardEvent) => {
+    if (dialogRef.current) {
+      const focusableBtnElments = dialogRef.current.querySelectorAll('button');
+
+      const { activeElement } = document;
+
+      const firstFocusEl = focusableBtnElments && focusableBtnElments[0];
+      const lastFocusEl =
+        focusableBtnElments &&
+        focusableBtnElments[focusableBtnElments.length - 1];
+
+      const { key, shiftKey } = evt;
+
+      const isFirstFocusEl = activeElement === firstFocusEl;
+      const isLastFocusEl = activeElement === lastFocusEl;
+
+      if (isFirstFocusEl) {
+        if (key === 'Tab' && shiftKey) {
+          evt.preventDefault();
+          lastFocusEl?.focus();
+        }
+      }
+
+      if (isLastFocusEl) {
+        if (key === 'Tab' && !shiftKey) {
+          evt.preventDefault();
+          firstFocusEl?.focus();
+        }
+      }
+    }
+  };
+
+  // 다이얼로그 팝업 시 포커스 자동 이동
+  React.useEffect(() => {
+    if (dialogRef.current) {
+      dialogRef.current.setAttribute('tabindex', '-1');
+      dialogRef.current.focus();
+
+      // 다이얼로그 팝업 내 마우스 포커스 순환 유지
+      window.addEventListener('keydown', handleFocusMove);
+    }
+
+    // 다이얼로그 팝업 시 바디 컨텐츠 스크롤 방지
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleFocusMove);
+    };
+  }, []);
+
+  console.log('render');
+
   return (
-    <DialogDimmStyle role='dialog' aria-labelledby={id}>
-      <DialogBox>
-        {title && <DialogTitle id={id}>{title}</DialogTitle>}
-        <DialogBody>{children}</DialogBody>
-        <DialogFoot>
-          <Button label={cancelLabel} onClick={onConfirm} />
-          <Button label={confirmLabel} onClick={onCancle} />
-        </DialogFoot>
-        <DialogCloseButton onClick={onClose}>
+    <DialogStyle.DimmStyle
+      role='dialog'
+      aria-labelledby={id}
+      ref={dialogRef}
+      onClick={handleClickDimmed}
+    >
+      <DialogStyle.Box>
+        {title && <DialogStyle.Title id={id}>{title}</DialogStyle.Title>}
+        <DialogStyle.Body>{children}</DialogStyle.Body>
+        <DialogStyle.Foot>
+          <Button label={cancelLabel} onClick={onCancle} />
+          <Button label={confirmLabel} onClick={onConfirm} />
+        </DialogStyle.Foot>
+        <DialogStyle.CloseButton onClick={onClose}>
           <ScreenOut label='다이얼로그 닫기' />
           <FontAwesomeIcon icon={faTimes} />
-        </DialogCloseButton>
-      </DialogBox>
-    </DialogDimmStyle>
+        </DialogStyle.CloseButton>
+      </DialogStyle.Box>
+    </DialogStyle.DimmStyle>
   );
 };
-
-const DialogDimmStyle = styled.div`
-  position: fixed;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.7);
-`;
-
-const DialogBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  position: relative;
-  width: 600px;
-  height: 600px;
-  border-radius: 10px;
-  background-color: #fff;
-`;
-
-const DialogTitle = styled.strong`
-  display: block;
-  padding: 20px;
-  border-bottom: 1px solid #bebebe;
-  font-size: 20px;
-  font-weight: bold;
-  box-sizing: border-box;
-`;
-
-const DialogBody = styled.div`
-  overflow-y: auto;
-  padding: 50px;
-`;
-
-const DialogFoot = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  min-height: 50px;
-  margin-top: auto;
-  padding: 20px;
-  box-sizing: border-box;
-  border-top: 1px solid #bebebe;
-`;
-
-const DialogCloseButton = styled.button`
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #ededed;
-  font-size: 20px;
-  cursor: pointer;
-`;
 
 export default Dialog;

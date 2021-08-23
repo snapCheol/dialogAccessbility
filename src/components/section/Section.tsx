@@ -18,7 +18,7 @@ const Section: FunctionComponent<SectionProps> = ({
 }) => {
   return (
     <SectionStyle bgColor={bgColor}>
-      <ScreenOut label={title} />
+      <ScreenOut label={title} as='h2' />
       <Button label={buttonLabel} onClick={buttonClick} />
     </SectionStyle>
   );

@@ -7,12 +7,12 @@ interface ButtonProps {
   onClick: (() => void) | undefined;
 }
 
-const Button: ForwardRefRenderFunction<null, ButtonProps> = (
-  { type, label, onClick },
+const Button: ForwardRefRenderFunction<HTMLButtonElement, ButtonProps> = (
+  { type, label, onClick, ...resetProps },
   ref
 ) => {
   return (
-    <ButtonStyle type={type} onClick={onClick} ref={ref}>
+    <ButtonStyle type={type} onClick={onClick} ref={ref} {...resetProps}>
       {label}
     </ButtonStyle>
   );
