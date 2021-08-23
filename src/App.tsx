@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import GlobalStyle from './components/style/GlobalStyle';
 import Section from './components/section/Section';
 import Dialog from './components/dialog/Dialog';
+import styled from '@emotion/styled';
 
 function App() {
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -63,7 +64,7 @@ function App() {
   ]);
 
   return (
-    <div className='container'>
+    <Container>
       <GlobalStyle />
       {sections.current.map((section) => {
         const { id, title, buttonLabel, buttonClick, bgColor } = section;
@@ -86,8 +87,12 @@ function App() {
           onClose={handleCloseDialog}
         />
       )}
-    </div>
+    </Container>
   );
 }
+
+const Container = styled.div`
+  height: 100%;
+`;
 
 export default App;
